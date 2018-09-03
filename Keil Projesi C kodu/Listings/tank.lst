@@ -1,0 +1,144 @@
+C51 COMPILER V9.56.0.0   TANK                                                              09/07/2017 01:29:24 PAGE 1   
+
+
+C51 COMPILER V9.56.0.0, COMPILATION OF MODULE TANK
+OBJECT MODULE PLACED IN .\Objects\tank.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE tank.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\tank
+                    -.lst) TABS(2) OBJECT(.\Objects\tank.obj)
+
+line level    source
+
+   1          #include <reg51.h>
+   2          /*Pin Tanimlari*/
+   3          sbit rs=P2^5;//LCD RS pini
+   4          sbit rw=P2^6;//LCD RW pini
+   5          sbit e=P2^7; //LCD EN pini
+   6          sbit quat=P1^3; //tankin çeyrek(quarter) seviye pini
+   7          sbit half=P1^2; //tankin yarim(half) seviye pini
+   8          sbit quat_3=P1^1; //tankin 3/4 seviye pini
+   9          sbit full=P1^0; //tankin dolu(full) seviye pini
+  10          sbit spkr_on=P1^4; //Buzzer pini 
+  11          sbit pump=P1^5; // pompa tetikleme pini
+  12          
+  13          /*Fonksiyonlar*/
+  14          void delay(int k) //Bekleme Fonksiyonu
+  15          {
+  16   1      int i,j;
+  17   1      for(i=0;i<k;i++)
+  18   1        for(j=0;j<1275;j++);
+  19   1      }//delay
+  20          
+  21          void write(int j) //LCD'ye veri yazma fonk.
+  22          {
+  23   1      rs=1;  //LCD'veri gönderme modu
+  24   1      rw=0;  //LCD'ye yazilacak
+  25   1      P3=j;  //veriyi LCD'data pinlerine yükle
+  26   1      e=1;  //Enable pini lojik 1'e çekilir 
+  27   1      delay(1); //Bekle
+  28   1      e=0; //Enable pini lojik 0'a çek ve veri ekrana görülür.
+  29   1      return;
+  30   1      }//write
+  31          
+  32          void cmd(int j)  //LCD'ye komut gönderme fonk.
+  33          {
+  34   1      P3=j;  //Komutu LCD'data pinlerine yükle
+  35   1      rs=0;  //Gönderilen degerin bir komut oldugunu bildir
+  36   1      rw=0;  //LCD'ye yaz
+  37   1      e=1;  //EN lojik 1 yap
+  38   1      delay(1); //Bekle
+  39   1      e=0; //LCD'deki degisikligi uygula
+  40   1      return;
+  41   1      }//cmd
+  42          
+  43          void puts(char *a) //Karakter katarini LCD'ye yazma fonk.
+  44          {
+  45   1      unsigned int p=0;
+  46   1      for(;a[p]!=0;p++)//Gelen string boyunca dön
+  47   1      write(a[p]); //Her karakteri write fonk.'a gönder
+  48   1      }//puts
+  49          
+  50          void lcd_init(void) // LCD kullanima hazirlama fonk.
+  51          {
+  52   1      cmd(0x38); //8bit 2 satir 16 sütun ayarlamasi
+  53   1      delay(1);
+  54   1      cmd(0x0e); //imleci göster
+C51 COMPILER V9.56.0.0   TANK                                                              09/07/2017 01:29:24 PAGE 2   
+
+  55   1      delay(1);     
+  56   1      cmd(0x01); //ekrani temizle
+  57   1      cmd(0x80); //LCD'nin 1.satir 1.sütununa imleci yerlestir
+  58   1      }//lcd_init
+  59          //Fonksiyonlarin Sonu
+  60          
+  61          /*Ana Program*/
+  62          void main()
+  63          {
+  64   1        quat=half=quat_3=full=1; //Pinler giris(input)olarak tanimlaniyor
+  65   1        quat=half=quat_3=full=0; //Pinler düsen kenara çekiliyor
+  66   1        spkr_on=pump=0;    // baslangiçta buzzer ve pompa pasif yapiliyor
+  67   1        lcd_init();        // initialising LCD
+  68   1        puts("Welcome To Water");
+  69   1        cmd(0xC0);              //Ikinci satir ilk sütun
+  70   1        puts("Level Indicator");
+  71   1        delay(300);
+  72   1        while(1)
+  73   1        {
+  74   2          while(quat==0&&half==0&&quat_3==0&&full==0)//Tankin bos olma sarti 
+  75   2          {
+  76   3            pump=1; //Bossa pompa çalisssin
+  77   3            spkr_on=0; //Bossa buzzer dursun
+  78   3            lcd_init();   
+  79   3            puts("VACANT"); //Ekrana VACANT yazdir
+  80   3            while(quat==0); //Bos oldugu müddetçe bekle
+  81   3          }
+  82   2          while(quat==1&&half==0&&quat_3==0&&full==0)//Tankin ilk çeyregi doldugu an
+  83   2          {
+  84   3            pump=1; //pump çalismaya devam etsin
+  85   3            spkr_on=0;
+  86   3            lcd_init();
+  87   3            puts("QUATER");      //Ekrana QUARTER yaz
+  88   3            while(half==0 && quat==1); //Çeyrek durum sonlanana kadar bekle
+  89   3          }
+  90   2          while(quat==1&&half==1&&quat_3==0&&full==0)//tankin yarim oldugu durum
+  91   2          {
+  92   3            pump=1;
+  93   3            spkr_on=0;
+  94   3            lcd_init();     
+  95   3            puts("HALF");      //Ekrana HALF yazdir
+  96   3            while(quat_3==0 && half==1); //Yarim durum sonlanan kadar bekle
+  97   3          }
+  98   2          while(quat==1&&half==1&&quat_3==1&&full==0)//tankin 3/4'ü dolu oldugu durum
+  99   2          {
+ 100   3            pump=1;
+ 101   3            spkr_on=0;
+ 102   3            lcd_init();
+ 103   3            puts("3/4 FULL");     //Ekrana 3/4 Full yazdir
+ 104   3            while(full==0 && quat_3==1); //3/4 durum sonlanana kadar bekle
+ 105   3          }
+ 106   2          while(quat==1&&half==1&&quat_3==1&&full==1)//tankin dolu oldugu durum
+ 107   2          {
+ 108   3            pump=0;//tank doldugunda pompayi durdur
+ 109   3            spkr_on=1;// Buzzeri çalistir
+ 110   3            lcd_init();
+ 111   3            puts("FULL;CLOSE TAP");     //Ekrana Full;Close TAP yazdir
+ 112   3            while(full==1);//Dolu oldugu müddetçe bekle
+ 113   3          }
+ 114   2        }
+ 115   1      }
+ 116          
+C51 COMPILER V9.56.0.0   TANK                                                              09/07/2017 01:29:24 PAGE 3   
+
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    368    ----
+   CONSTANT SIZE    =     76    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       5
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
